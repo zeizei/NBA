@@ -4,16 +4,21 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
 
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 import javax.swing.JViewport;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import presentation.SonFrame;
+import start.Main;
+import businesslogic.teams.OneTeamInfoBl;
 import businesslogic.teams.TeamInfoBl;
 import businesslogicservice.teams.TeamInfoBlService;
-
 import common.mycomponent.MyComboBox;
 import common.mycomponent.MyPanel;
 import common.mycomponent.MyTable;
@@ -22,8 +27,11 @@ import common.mydatastructure.SortCell;
 import common.mydatastructure.TeamNormalInfo_Expand;
 import common.statics.Command;
 import common.statics.Field;
+import common.statics.Method;
 import common.statics.MyColor;
+import common.statics.MyFont;
 import common.statics.NUMBER;
+import common.statics.PathOfFile;
 
 public class TeamPanel extends MyPanel {
 	private static final long serialVersionUID = 1L;
@@ -41,6 +49,32 @@ public class TeamPanel extends MyPanel {
 		this.setComponentsStyle();
 		this.initTable();
 		this.setTableStyle();
+		rangeAndNameTable.addMouseListener(new MouseListener() {
+
+			public void mouseReleased(MouseEvent e) {
+
+			}
+
+			public void mousePressed(MouseEvent e) {
+
+			}
+
+			public void mouseExited(MouseEvent e) {
+
+			}
+
+			public void mouseEntered(MouseEvent e) {
+
+			}
+
+			public void mouseClicked(MouseEvent arg0) {
+				if (rangeAndNameTable.getSelectedRow() >= 0 && rangeAndNameTable.getSelectedRow() < rangeAndNameTable.getRowCount()) {
+					int row = rangeAndNameTable.getSelectedRow();
+					String teamName = (String) rangeAndNameTable.getValueAt(row, 2);
+					new SonFrame(teamName, SonFrame.teamCard);
+				}
+			}
+		});
 	}
 
 	private void initTable() {
@@ -53,7 +87,10 @@ public class TeamPanel extends MyPanel {
 	private void fillTable(ArrayList<TeamNormalInfo_Expand> voList) {
 		for (int i = 0; i < voList.size(); i++) {
 			String performRow[] = voList.get(i).toStringArray();
-			String infoRow[] = { String.valueOf(i + 1), "队标", voList.get(i).getTeamName() };
+			Object infoRow[] = {
+					String.valueOf(i + 1),
+					Method.changeSize(new ImageIcon(PathOfFile.TEAM_LOGO_IMAGE + voList.get(i).getTeamName() + ".png"), (int) (60 * NUMBER.px),
+							(int) (55 * NUMBER.px)), voList.get(i).getTeamName() };
 			teamShowTableModel.addRow(performRow);
 			rangeAndNameTableModel.addRow(infoRow);
 		}
@@ -109,8 +146,8 @@ public class TeamPanel extends MyPanel {
 	}
 
 	private void setComponentsLocation() {
-		selectionPanel.setBounds((int) (NUMBER.px * 50), (int) (NUMBER.px * 20), (int) (NUMBER.FRAME_WIDTH - 100), (int) (NUMBER.px * 60));
-		teamShowPane.setBounds((int) (NUMBER.px * 50), (int) (NUMBER.px * 100), (int) (NUMBER.FRAME_WIDTH - 100), (int) (NUMBER.px * 580));
+		selectionPanel.setLocation((int) (NUMBER.px * 50), (int) (NUMBER.px * 20));
+		teamShowPane.setBounds((int) (NUMBER.px * 50), (int) (NUMBER.px * 100), (int) (NUMBER.FRAME_WIDTH - 100), (int) (NUMBER.px * 600));
 		this.add(teamShowPane);
 		this.add(selectionPanel);
 	}
@@ -120,7 +157,20 @@ public class TeamPanel extends MyPanel {
 		teamShowTableModel = new MyTableModel(performanceList);
 		rangeAndNameTableModel = new MyTableModel(rangeAndName);
 		teamShowTable = new MyTable(teamShowTableModel);
-		rangeAndNameTable = new MyTable(rangeAndNameTableModel);
+		rangeAndNameTable = new MyTable(rangeAndNameTableModel) {
+			private static final long serialVersionUID = 1L;
+
+			@SuppressWarnings({ "unchecked", "rawtypes" })
+			public Class getColumnClass(int column) {
+				if (column == 1) {// 要这样定义table，要重写这个方法0，0的意思就是别的格子的类型都跟0,0的一样。
+					return ImageIcon.class;
+				}
+				else {
+					return getValueAt(0, 0).getClass();
+				}
+			}
+
+		};
 		teamShowPane = new JScrollPane();
 		teamShowPane.getViewport().add(teamShowTable);
 	}
@@ -131,8 +181,9 @@ public class TeamPanel extends MyPanel {
 
 	class SelectionPanel extends MyPanel implements MouseListener {
 		private static final long serialVersionUID = 1L;
-		JButton searchButton;
-		MyComboBox<String> selectCellChoose, totOrAvgChoose;
+		private JButton searchButton, findTeamButton;
+		private JTextField teamInput;
+		private MyComboBox<String> selectCellChoose, totOrAvgChoose;
 		private String[] sortField = { Field.point, Field.rebound, Field.assist, Field.steal, Field.blockShot, Field.foul, Field.fault, Field.shot,
 				Field.three, Field.penalty, Field.offendRound, Field.defendRebound };
 
@@ -146,7 +197,9 @@ public class TeamPanel extends MyPanel {
 		}
 
 		private void createObjects() {
+			teamInput = new JTextField();
 			searchButton = new JButton("搜索");
+			findTeamButton = new JButton("查找球队");
 			String[] totOrAvg = { "场均数据", "总数据" };
 			String[] selectCellList = { "得分", "篮板", "助攻", "抢断", "盖帽", "犯规", "失误", "投篮命中率", "三分命中率", "罚球命中率", "进攻篮板", "防守篮板" };
 			selectCellChoose = new MyComboBox<String>(selectCellList);
@@ -154,20 +207,33 @@ public class TeamPanel extends MyPanel {
 		}
 
 		private void setComponentsLocation() {
-			selectCellChoose.setLocation((int) (NUMBER.px * 200), (int) (NUMBER.px * 20));
-			totOrAvgChoose.setLocation((int) (NUMBER.px * 500), (int) (NUMBER.px * 20));
-			searchButton.setBounds((int) (NUMBER.px * 800), (int) (NUMBER.px * 20), (int) (NUMBER.px * 150), (int) (NUMBER.px * 40));
+			findTeamButton.setBounds((int) (NUMBER.px * 800), 0, (int) (NUMBER.px * 150), (int) (NUMBER.px * 35));
+			teamInput.setBounds((int) (NUMBER.px * 200), 0, (int) (NUMBER.px * 400), (int) (NUMBER.px * 35));
+			selectCellChoose.setLocation((int) (NUMBER.px * 100), (int) (NUMBER.px * 42));
+			totOrAvgChoose.setLocation((int) (NUMBER.px * 450), (int) (NUMBER.px * 42));
+			searchButton.setBounds((int) (NUMBER.px * 900), (int) (NUMBER.px * 42), (int) (NUMBER.px * 180), (int) (NUMBER.px * 35));
+			this.add(teamInput);
+			this.add(findTeamButton);
 			this.add(selectCellChoose);
 			this.add(searchButton);
 			this.add(totOrAvgChoose);
 		}
 
 		private void setComponentsStyle() {
-			searchButton.setFocusable(false);
-			searchButton.setBorderPainted(false);
-			searchButton.setForeground(MyColor.LIGHT_COLOR);
-			searchButton.setBackground(MyColor.MIDDLE_COLOR);
-			searchButton.addMouseListener(this);
+			this.setButton(searchButton);
+			this.setButton(findTeamButton);
+			teamInput.setOpaque(false);
+			teamInput.setForeground(MyColor.MY_WHITE);
+			teamInput.setFont(MyFont.SMALL_BOLD);
+		}
+
+		private void setButton(JButton button) {
+			button.setFocusable(false);
+			button.setBorderPainted(false);
+			button.setFont(MyFont.SMALLEST_BOLD);
+			button.setForeground(MyColor.MY_WHITE);
+			button.setBackground(MyColor.MIDDLE_COLOR);
+			button.addMouseListener(this);
 		}
 
 		public void mouseClicked(MouseEvent e) {
@@ -184,6 +250,21 @@ public class TeamPanel extends MyPanel {
 					ArrayList<TeamNormalInfo_Expand> teamNormalList_tot = teamInfoBl.getTeamNormal_tot(30, new SortCell[] { sort });
 					clearTable();
 					fillTable(teamNormalList_tot);
+				}
+			}
+			else if (e.getSource().equals(findTeamButton)) {
+				String teamNameInput = teamInput.getText();
+				if (teamNameInput.equals("") || teamNameInput == null) {
+					JOptionPane.showMessageDialog(Main.mainFrame, "请输入要查找的球队");// 弹出提示
+				}
+				else {
+					TeamNormalInfo_Expand teamNormal = new OneTeamInfoBl().getTeamNormalInfo_avg(teamNameInput);
+					if (teamNormal == null) {
+						JOptionPane.showMessageDialog(Main.mainFrame, "不存在该球队");// 弹出提示
+					}
+					else {
+						new SonFrame(teamNameInput, SonFrame.teamCard);
+					}
 				}
 			}
 		}

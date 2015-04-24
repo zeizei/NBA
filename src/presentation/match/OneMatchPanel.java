@@ -11,8 +11,12 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
 
+import presentation.SonFrame;
+import presentation.players.OnePlayerPanel;
+import presentation.teams.OneTeamPanel;
 import businesslogic.matches.OneMatchInfoBl;
 import businesslogicservice.matches.OneMatchInfoBlService;
+import businesslogicservice.teams.OneTeamInfoBlService;
 
 import common.mycomponent.MyButton;
 import common.mycomponent.MyLabel;
@@ -22,6 +26,7 @@ import common.mycomponent.MyTable;
 import common.mycomponent.MyTableModel;
 import common.mydatastructure.GeneralInfoOfOneMatch;
 import common.mydatastructure.PlayerPerformOfOneMatch;
+import common.mydatastructure.TeamPerformOfOneMatch;
 import common.statics.MyColor;
 import common.statics.MyFont;
 import common.statics.NUMBER;
@@ -32,6 +37,7 @@ public class OneMatchPanel extends MyPanel implements MouseListener {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
+	private MyPanel thisPanel = this;
 	private MyLabel point;
 	private MyButton firstTeamMemberInfoButton;
 	private MyButton secondTeamMemberInfoButton;
@@ -67,6 +73,8 @@ public class OneMatchPanel extends MyPanel implements MouseListener {
 		firstTeamMemberInfoButton.addMouseListener(this);
 		secondTeamMemberInfoButton.addMouseListener(this);
 		teamMatchInfoButton.addMouseListener(this);
+		firstTeamLogo.addMouseListener(this);
+		secondTeamLogo.addMouseListener(this);
 	}
 
 	private void createObjects() {
@@ -182,13 +190,82 @@ public class OneMatchPanel extends MyPanel implements MouseListener {
 			}
 			teamPlayerInfo.setBounds(0, 0, (int) (NUMBER.px * 1240), (int) (NUMBER.px * 400));
 			this.add(teamPlayerInfo);
+			teamInfoTable.addMouseListener(new MouseListener() {
+
+				public void mouseReleased(MouseEvent e) {
+				}
+
+				public void mousePressed(MouseEvent e) {
+				}
+
+				public void mouseExited(MouseEvent e) {
+				}
+
+				public void mouseEntered(MouseEvent e) {
+				}
+
+				public void mouseClicked(MouseEvent e) {
+					if (teamInfoTable.getSelectedRow() >= 0 && teamInfoTable.getSelectedRow() < teamInfoTable.getRowCount()) {
+						int row = teamInfoTable.getSelectedRow();
+						String playerName = (String) teamInfoTable.getValueAt(row, 0);
+						OnePlayerPanel playerPanel = new OnePlayerPanel(playerName);
+						SonFrame.changePanel(thisPanel, playerPanel);
+					}
+				}
+			});
 			this.setVisible(true);
 		}
 	}
 
 	class TeamInfoComparePanel extends MyPanel {
+		private OneTeamInfoBlService OneTeamInfoBl = new businesslogic.teams.OneTeamInfoBl();
+		private TeamPerformOfOneMatch firstTeamPerform = OneTeamInfoBl.getOneMatchTeamPerform(generalOneMatch.getFirstTeamName(),
+				generalOneMatch.getDate());
+		private TeamPerformOfOneMatch secondTeamPerform = OneTeamInfoBl.getOneMatchTeamPerform(generalOneMatch.getSecondTeamName(),
+				generalOneMatch.getDate());
+		private String performanceList[] = { "分数", "投篮", "三分球", "罚球", "助攻", "篮板", "抢断", "盖帽" };
+		private String firstPerform[] = { String.valueOf(firstTeamPerform.getPoint()),
+				String.valueOf(firstTeamPerform.getTotalHit()) + "/" + String.valueOf(firstTeamPerform.getTotalShot()),
+				String.valueOf(firstTeamPerform.getThreeHit()) + "/" + String.valueOf(firstTeamPerform.getThreeShot()),
+				String.valueOf(firstTeamPerform.getFreeHit()) + "/" + String.valueOf(firstTeamPerform.getFreeShot()),
+				String.valueOf(firstTeamPerform.getAssist()), String.valueOf(firstTeamPerform.getRebound()),
+				String.valueOf(firstTeamPerform.getSteal()), String.valueOf(firstTeamPerform.getBlock()) };
 
+		private String secondPerform[] = { String.valueOf(secondTeamPerform.getPoint()),
+				String.valueOf(secondTeamPerform.getTotalHit()) + "/" + String.valueOf(secondTeamPerform.getTotalShot()),
+				String.valueOf(secondTeamPerform.getThreeHit()) + "/" + String.valueOf(secondTeamPerform.getThreeShot()),
+				String.valueOf(secondTeamPerform.getFreeHit()) + "/" + String.valueOf(secondTeamPerform.getFreeShot()),
+				String.valueOf(secondTeamPerform.getAssist()), String.valueOf(secondTeamPerform.getRebound()),
+				String.valueOf(secondTeamPerform.getSteal()), String.valueOf(secondTeamPerform.getBlock()) };
+
+		private MyLabel performLabel[] = new MyLabel[8];
+		private MyLabel firstTeamInfo[] = new MyLabel[8];
+		private MyLabel secondTeamInfo[] = new MyLabel[8];
 		private static final long serialVersionUID = 1L;
+
+		public TeamInfoComparePanel() {
+			for (int i = 0; i < 8; i++) {
+				performLabel[i] = new MyLabel(performanceList[i]);
+				performLabel[i].setHorizontalAlignment(SwingConstants.CENTER);
+				performLabel[i].setOpaque(true);
+				performLabel[i].setBackground(MyColor.LIGHT_BLUE);
+				performLabel[i].setBounds((int) (NUMBER.px * 940) / 2, i * (int) (NUMBER.px * 45), (int) (NUMBER.px * 300), (int) (NUMBER.px * 45));
+
+				firstTeamInfo[i] = new MyLabel(firstPerform[i] + "--------------------");
+				firstTeamInfo[i].setBounds((int) (NUMBER.px * 940) / 2 - (int) (NUMBER.px * 300), i * (int) (NUMBER.px * 45),
+						(int) (NUMBER.px * 300), (int) (NUMBER.px * 45));
+
+				secondTeamInfo[i] = new MyLabel("--------------------" + secondPerform[i]);
+				secondTeamInfo[i].setHorizontalAlignment(SwingConstants.RIGHT);
+				secondTeamInfo[i].setBounds((int) (NUMBER.px * 940) / 2 + (int) (NUMBER.px * 300), i * (int) (NUMBER.px * 45),
+						(int) (NUMBER.px * 300), (int) (NUMBER.px * 45));
+
+				this.add(performLabel[i]);
+				this.add(firstTeamInfo[i]);
+				this.add(secondTeamInfo[i]);
+			}
+
+		}
 
 	}
 
@@ -217,21 +294,29 @@ public class OneMatchPanel extends MyPanel implements MouseListener {
 	public void mouseClicked(MouseEvent e) {
 		if (e.getSource().equals(firstTeamMemberInfoButton)) {
 			contentPanel.card.show(contentPanel, "firstTeamMemberInfoPanel");
-			firstTeamMemberInfoButton.setBackground(MyColor.DEEP_COLOR);
+			firstTeamMemberInfoButton.setBackground(MyColor.MY_ORIANGE);
 			secondTeamMemberInfoButton.setBackground(MyColor.MIDDLE_COLOR);
 			teamMatchInfoButton.setBackground(MyColor.MIDDLE_COLOR);
 		}
 		else if (e.getSource().equals(secondTeamMemberInfoButton)) {
 			contentPanel.card.show(contentPanel, "secondTeamMemberInfoPanel");
 			firstTeamMemberInfoButton.setBackground(MyColor.MIDDLE_COLOR);
-			secondTeamMemberInfoButton.setBackground(MyColor.DEEP_COLOR);
+			secondTeamMemberInfoButton.setBackground(MyColor.MY_ORIANGE);
 			teamMatchInfoButton.setBackground(MyColor.MIDDLE_COLOR);
 		}
 		else if (e.getSource().equals(teamMatchInfoButton)) {
 			contentPanel.card.show(contentPanel, "teamInfoComparePanel");
 			firstTeamMemberInfoButton.setBackground(MyColor.MIDDLE_COLOR);
 			secondTeamMemberInfoButton.setBackground(MyColor.MIDDLE_COLOR);
-			teamMatchInfoButton.setBackground(MyColor.DEEP_COLOR);
+			teamMatchInfoButton.setBackground(MyColor.MY_ORIANGE);
+		}
+		else if (e.getSource().equals(firstTeamLogo)) {
+			OneTeamPanel teamPanel = new OneTeamPanel(generalOneMatch.getFirstTeamName());
+			SonFrame.changePanel(thisPanel, teamPanel);
+		}
+		else if (e.getSource().equals(secondTeamLogo)) {
+			OneTeamPanel teamPanel = new OneTeamPanel(generalOneMatch.getSecondTeamName());
+			SonFrame.changePanel(thisPanel, teamPanel);
 		}
 	}
 
@@ -245,6 +330,12 @@ public class OneMatchPanel extends MyPanel implements MouseListener {
 		else if (e.getSource().equals(teamMatchInfoButton)) {
 			teamMatchInfoButton.setBorderPainted(true);
 		}
+		else if (e.getSource().equals(firstTeamLogo)) {
+			firstTeamLogo.setLocation(firstTeamLogo.getX() - (int) (NUMBER.px * 3), firstTeamLogo.getY() - (int) (NUMBER.px * 3));
+		}
+		else if (e.getSource().equals(secondTeamLogo)) {
+			secondTeamLogo.setLocation(secondTeamLogo.getX() - (int) (NUMBER.px * 3), secondTeamLogo.getY() - (int) (NUMBER.px * 3));
+		}
 	}
 
 	public void mouseExited(MouseEvent e) {
@@ -256,6 +347,12 @@ public class OneMatchPanel extends MyPanel implements MouseListener {
 		}
 		else if (e.getSource().equals(teamMatchInfoButton)) {
 			teamMatchInfoButton.setBorderPainted(false);
+		}
+		else if (e.getSource().equals(firstTeamLogo)) {
+			firstTeamLogo.setLocation(firstTeamLogo.getX() + (int) (NUMBER.px * 3), firstTeamLogo.getY() + (int) (NUMBER.px * 3));
+		}
+		else if (e.getSource().equals(secondTeamLogo)) {
+			secondTeamLogo.setLocation(secondTeamLogo.getX() + (int) (NUMBER.px * 3), secondTeamLogo.getY() + (int) (NUMBER.px * 3));
 		}
 	}
 
